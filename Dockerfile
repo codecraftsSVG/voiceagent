@@ -30,6 +30,9 @@ RUN mkdir -p models chroma_db resumes && \
     # Download the Chroma embedding model during the image build, not at runtime.
     RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
+    # Download the Whisper model during the image build, not on first page load.
+    RUN python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
+
     # Build the fixed demo knowledge base into the image so startup is immediate.
     RUN python scripts/ingest_resumes.py --clear
 
