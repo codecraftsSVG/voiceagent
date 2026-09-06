@@ -30,6 +30,9 @@ RUN mkdir -p models chroma_db resumes && \
     # Download the Chroma embedding model during the image build, not at runtime.
     RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
+    # Build the fixed demo knowledge base into the image so startup is immediate.
+    RUN python scripts/ingest_resumes.py --clear
+
 EXPOSE 8501
 
-CMD ["sh", "-c", "python scripts/ingest_resumes.py --clear && streamlit run frontend/app.py --server.address=0.0.0.0 --server.port=${PORT} --server.headless=true"]
+CMD ["sh", "-c", "streamlit run frontend/app.py --server.address=0.0.0.0 --server.port=${PORT} --server.headless=true"]
