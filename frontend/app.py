@@ -219,6 +219,7 @@ def load_backend():
         llm_mode=llm_mode,
         enable_rag=True,
         enable_tts=True,
+        enable_asr=False,
     )
     return {
         "pipeline": pipeline,
@@ -227,6 +228,17 @@ def load_backend():
         "llm": llm,
         "tts": tts,
     }
+
+
+@st.cache_resource(show_spinner="Loading speech recognition...")
+def load_asr():
+    _, asr, _, _, _ = build_pipeline(
+        llm_mode="tokenrouter",
+        enable_rag=False,
+        enable_tts=False,
+        enable_asr=True,
+    )
+    return asr
 
 
 # ============================================================
@@ -415,7 +427,7 @@ if webrtc_audio or audio_input is not None:
 
         with st.spinner("🎧 Understanding your voice..."):
             text = ""
-            asr = backend.get("asr")
+            asr = backend.get("asr") or load_asr()
 
             try:
                 # Try the ASR object's transcribe method first (now supports bytes)

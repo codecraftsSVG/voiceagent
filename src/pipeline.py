@@ -28,14 +28,17 @@ def build_pipeline(
     llm_mode: str = "tokenrouter",
     enable_rag: bool = True,
     enable_tts: bool = True,
+    enable_asr: bool = True,
 ):
     """Build standalone components for console/audio modes."""
 
     # ASR
-    asr = LaptopWhisperASR(
-        model_size=os.getenv("WHISPER_MODEL", "tiny"),
-        compute_type=os.getenv("WHISPER_COMPUTE_TYPE", "int8"),
-    )
+    asr = None
+    if enable_asr:
+        asr = LaptopWhisperASR(
+            model_size=os.getenv("WHISPER_MODEL", "tiny"),
+            compute_type=os.getenv("WHISPER_COMPUTE_TYPE", "int8"),
+        )
 
     # RAG
     project_root = Path(__file__).resolve().parent.parent
