@@ -126,7 +126,7 @@ This repository includes a Docker image for a public Hugging Face Space. Create 
 
 The image installs `ffmpeg`, `espeak-ng`, and `libsndfile`, downloads the Piper voice model during the image build, and rebuilds the small embedded Chroma collection on every container start. Resume files can be added under `resumes/`; if none are present, the embedded resume chunks are used.
 
-The browser microphone uses WebRTC. Visitors must grant microphone permission in their browser. The Space uses `WHISPER_MODEL=tiny` by default to fit the free CPU tier; set it to `base` only if the additional latency and memory use are acceptable.
+The browser microphone uses WebRTC. Visitors must grant microphone permission in their browser. The deployment uses `WHISPER_MODEL=base` for better transcription accuracy, with additional build time, latency, and memory use.
 
 Required Space secret:
 
@@ -137,7 +137,7 @@ TOKENROUTER_API_KEY=your-tokenrouter-key
 Optional Space variables:
 
 ```text
-WHISPER_MODEL=tiny
+WHISPER_MODEL=base
 WHISPER_COMPUTE_TYPE=int8
 ```
 

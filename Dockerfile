@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     HF_HOME=/opt/huggingface \
-    WHISPER_MODEL=tiny \
+    WHISPER_MODEL=base \
     PORT=8501
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -31,7 +31,7 @@ RUN mkdir -p models chroma_db resumes && \
     RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
     # Download the Whisper model during the image build, not on first page load.
-    RUN python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
+    RUN python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8')"
 
     # Build the fixed demo knowledge base into the image so startup is immediate.
     RUN python scripts/ingest_resumes.py --clear
