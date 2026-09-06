@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: voice-agent
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: TOKENROUTER_API_KEY
+        sync: false
+      - key: WHISPER_MODEL
+        value: tiny
+      - key: WHISPER_COMPUTE_TYPE
+        value: int8
+      - key: PORT
+        value: 10000
