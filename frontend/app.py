@@ -16,6 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipeline import build_pipeline
+from src.services.resume_context import ResumeContext
 
 
 logging.basicConfig(
@@ -229,13 +230,10 @@ def load_asr():
 
 @st.cache_resource(show_spinner="Loading knowledge base...")
 def load_rag():
-    """Load the embedding model only when a question needs RAG."""
+    """Load the low-memory resume retriever when a question needs context."""
     logger.info("load_rag start")
     try:
-        from src.services.rag_chroma import ChromaRAG
-
-        chroma_dir = os.getenv("CHROMA_DIR", str(PROJECT_ROOT / "chroma_db"))
-        rag = ChromaRAG(collection_name="voice_kb", persist_dir=chroma_dir, top_k=3)
+        rag = ResumeContext(top_k=4)
         logger.info("load_rag complete")
         return rag
     except Exception:
@@ -327,7 +325,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-        st.write("📚 Knowledge base: disabled on free tier")
+        st.write("📚 Resume context: lightweight mode")
 
         if tts:
             st.markdown(
@@ -364,7 +362,7 @@ with st.sidebar:
 
 if backend is None:
     st.error("The AI backend could not be initialized.")
-    st.info("Check your TokenRouter API key, Piper installation, and model files.")
+    st.info("Check your TokenRouter API key and deployment environment variables.")
     st.stop()
 
 rag = backend["rag"]
