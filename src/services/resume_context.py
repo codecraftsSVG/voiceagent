@@ -28,10 +28,20 @@ class ResumeContext:
 
     def query(self, query_text: str) -> List[str]:
         query_terms = set(re.findall(r"[a-z0-9]+", query_text.lower()))
+        stop_words = {"a", "an", "are", "did", "do", "does", "he", "his", "how", "i", "is", "me", "the", "to", "what", "who", "you", "your"}
+        meaningful_terms = query_terms - stop_words
         scored = []
         for chunk in self.chunks:
             chunk_terms = set(re.findall(r"[a-z0-9]+", chunk.lower()))
-            score = len(query_terms & chunk_terms)
+            score = len(meaningful_terms & chunk_terms) * 3
+            if meaningful_terms & {"certification", "certifications", "certified", "certificate", "certificates"} and "certif" in chunk.lower():
+                score += 10
+            if meaningful_terms & {"contact", "email", "mobile", "phone", "number", "reach"} and "contact:" in chunk.lower():
+                score += 10
+            if meaningful_terms & {"project", "projects"} and "project" in chunk.lower():
+                score += 8
+            if meaningful_terms & {"education", "degree", "degrees", "study"} and ("education:" in chunk.lower() or "diploma" in chunk.lower()):
+                score += 8
             scored.append((score, chunk))
         scored.sort(key=lambda item: item[0], reverse=True)
         matches = [chunk for score, chunk in scored if score > 0]
