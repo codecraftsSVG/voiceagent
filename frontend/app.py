@@ -219,7 +219,7 @@ def load_backend():
         llm_mode=llm_mode,
         enable_rag=True,
         enable_tts=True,
-        enable_asr=True,
+        enable_asr=False,
     )
     return {
         "pipeline": pipeline,
@@ -228,6 +228,18 @@ def load_backend():
         "llm": llm,
         "tts": tts,
     }
+
+
+@st.cache_resource(show_spinner="Loading speech recognition...")
+def load_asr():
+    """Load one Whisper instance only when the user uses voice input."""
+    _, asr, _, _, _ = build_pipeline(
+        llm_mode="tokenrouter",
+        enable_rag=False,
+        enable_tts=False,
+        enable_asr=True,
+    )
+    return asr
 
 
 # ============================================================
@@ -286,7 +298,7 @@ with st.sidebar:
 
     st.write("**LLM:** TokenRouter")
     st.write("**Model:** z-ai/glm-5.3-free")
-    st.write("**ASR:** faster-whisper tiny")
+    st.write("**ASR:** faster-whisper tiny (on voice use)")
     st.write("**TTS:** Piper")
     st.write("**Vector DB:** ChromaDB")
 
@@ -416,7 +428,7 @@ if webrtc_audio or audio_input is not None:
 
         with st.spinner("🎧 Understanding your voice..."):
             text = ""
-            asr = backend.get("asr")
+            asr = backend.get("asr") or load_asr()
 
             try:
                 if asr and hasattr(asr, "transcribe"):
