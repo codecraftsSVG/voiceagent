@@ -18,6 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipeline import build_pipeline
+from src.services.rag_chroma import ChromaRAG
 
 
 logging.basicConfig(
@@ -227,7 +228,7 @@ def load_backend():
     try:
         pipeline, asr, rag, llm, tts = build_pipeline(
             llm_mode=llm_mode,
-            enable_rag=True,
+            enable_rag=False,
             enable_tts=True,
             enable_asr=False,
         )
@@ -259,6 +260,20 @@ def load_asr():
         return asr
     except Exception:
         logger.exception("load_asr failed")
+        raise
+
+
+@st.cache_resource(show_spinner="Loading knowledge base...")
+def load_rag():
+    """Load the embedding model only when a question needs RAG."""
+    logger.info("load_rag start")
+    try:
+        chroma_dir = os.getenv("CHROMA_DIR", str(PROJECT_ROOT / "chroma_db"))
+        rag = ChromaRAG(collection_name="voice_kb", persist_dir=chroma_dir, top_k=3)
+        logger.info("load_rag complete")
+        return rag
+    except Exception:
+        logger.exception("load_rag failed")
         raise
 
 
@@ -350,12 +365,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-        if rag:
-            try:
-                collection_count = rag.count()
-                st.write(f"📚 Knowledge base: {collection_count} documents")
-            except Exception:
-                st.write("📚 Knowledge base: connected")
+        st.write("📚 Knowledge base: loads on first question")
 
         if tts:
             st.markdown(
@@ -398,6 +408,17 @@ if backend is None:
 rag = backend["rag"]
 llm = backend["llm"]
 tts = backend["tts"]
+
+
+def get_rag():
+    """Load RAG on demand without blocking the initial page render."""
+    if "rag_loaded" not in st.session_state:
+        try:
+            st.session_state.rag_loaded = load_rag()
+        except Exception as exc:
+            st.warning(f"Knowledge base unavailable: {exc}")
+            st.session_state.rag_loaded = None
+    return st.session_state.rag_loaded
 
 
 # ============================================================
@@ -468,7 +489,7 @@ if webrtc_audio or audio_input is not None:
             start = time.perf_counter()
             with st.spinner("🤖 Thinking..."):
                 try:
-                    response = ask_llm(text, rag, llm)
+                    response = ask_llm(text, get_rag(), llm)
                 except Exception as exc:
                     st.error(f"LLM error: {exc}")
                     response = None
@@ -517,7 +538,7 @@ if text_input:
         start = time.perf_counter()
         with st.spinner("🤖 Thinking..."):
             try:
-                response = ask_llm(text_input, rag, llm)
+                response = ask_llm(text_input, get_rag(), llm)
             except Exception as exc:
                 st.error(f"LLM error: {exc}")
                 response = None
