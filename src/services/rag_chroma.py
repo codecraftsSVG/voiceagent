@@ -27,13 +27,16 @@ class ChromaRAG:
             self.collection = self.client.get_collection(
                 name=collection_name, embedding_function=self.embedding_fn
             )
-            count = self.collection.count()
-            print(f"[RAG] Loaded collection '{collection_name}' with {count} documents")
+            print(f"[RAG] Loaded collection '{collection_name}'")
         except Exception:
             self.collection = self.client.create_collection(
                 name=collection_name, embedding_function=self.embedding_fn
             )
             print(f"[RAG] Created new collection '{collection_name}'")
+
+    def count(self) -> int:
+        """Return the collection size when the caller explicitly needs it."""
+        return self.collection.count()
 
     def query(self, query_text: str) -> List[str]:
         results = self.collection.query(

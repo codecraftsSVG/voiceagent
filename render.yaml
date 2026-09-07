@@ -10,7 +10,7 @@ services:
       - key: TOKENROUTER_API_KEY
         sync: false
       - key: WHISPER_MODEL
-        value: base
+        value: tiny
       - key: WHISPER_COMPUTE_TYPE
         value: int8
       - key: PORT

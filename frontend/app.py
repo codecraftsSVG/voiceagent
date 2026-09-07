@@ -219,7 +219,7 @@ def load_backend():
         llm_mode=llm_mode,
         enable_rag=True,
         enable_tts=True,
-        enable_asr=False,
+        enable_asr=True,
     )
     return {
         "pipeline": pipeline,
@@ -228,17 +228,6 @@ def load_backend():
         "llm": llm,
         "tts": tts,
     }
-
-
-@st.cache_resource(show_spinner="Loading speech recognition...")
-def load_asr():
-    _, asr, _, _, _ = build_pipeline(
-        llm_mode="tokenrouter",
-        enable_rag=False,
-        enable_tts=False,
-        enable_asr=True,
-    )
-    return asr
 
 
 # ============================================================
@@ -297,7 +286,7 @@ with st.sidebar:
 
     st.write("**LLM:** TokenRouter")
     st.write("**Model:** z-ai/glm-5.3-free")
-    st.write("**ASR:** faster-whisper base")
+    st.write("**ASR:** faster-whisper tiny")
     st.write("**TTS:** Piper")
     st.write("**Vector DB:** ChromaDB")
 
@@ -331,7 +320,7 @@ with st.sidebar:
 
         if rag:
             try:
-                collection_count = rag.collection.count()
+                collection_count = rag.count()
                 st.write(f"📚 Knowledge base: {collection_count} documents")
             except Exception:
                 st.write("📚 Knowledge base: connected")
@@ -427,20 +416,13 @@ if webrtc_audio or audio_input is not None:
 
         with st.spinner("🎧 Understanding your voice..."):
             text = ""
-            asr = backend.get("asr") or load_asr()
+            asr = backend.get("asr")
 
             try:
-                # Try the ASR object's transcribe method first (now supports bytes)
                 if asr and hasattr(asr, "transcribe"):
                     text = run_async(asr.transcribe(audio_bytes))
                 else:
-                    # Fallback to direct Whisper
-                    from faster_whisper import WhisperModel
-                    if "web_whisper" not in st.session_state:
-                        st.session_state.web_whisper = WhisperModel(
-                            "base", device="cpu", compute_type="int8"
-                        )
-                    text = transcribe_audio(audio_bytes, st.session_state.web_whisper)
+                    st.error("ASR is not available.")
 
             except Exception as exc:
                 st.error(f"Voice processing failed: {exc}")
