@@ -294,7 +294,7 @@ with st.sidebar:
     st.write("**LLM:** TokenRouter")
     st.write("**Model:** z-ai/glm-5.3-free")
     st.write("**ASR:** Groq Whisper (on voice use)")
-    st.write("**TTS:** Edge network voice")
+    st.write("**TTS:** Edge male network voice")
     st.write("**Vector DB:** Disabled on free tier")
 
     st.divider()

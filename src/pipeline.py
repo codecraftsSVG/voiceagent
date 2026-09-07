@@ -96,7 +96,7 @@ def build_pipeline(
         if tts_provider == "edge":
             from src.services.tts_edge import EdgeTTS
 
-            tts = EdgeTTS(voice=os.getenv("TTS_VOICE", "en-US-AriaNeural"))
+            tts = EdgeTTS(voice=os.getenv("TTS_VOICE", "en-US-GuyNeural"))
             _log("TTS loading complete")
         else:
             _log("TTS disabled: set TTS_PROVIDER=edge to enable network TTS")
