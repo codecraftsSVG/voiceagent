@@ -76,7 +76,7 @@ def build_pipeline(
         llm = TokenRouterLLM(
             model="z-ai/glm-5.3-free",
             system_prompt=system_prompt,
-            max_tokens=256,
+            max_tokens=512,
         )
     elif llm_mode == "groq":
         llm = GroqLLM(
