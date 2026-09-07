@@ -295,9 +295,9 @@ with st.sidebar:
 
     st.write("**LLM:** TokenRouter")
     st.write("**Model:** z-ai/glm-5.3-free")
-    st.write("**ASR:** faster-whisper tiny (on voice use)")
-    st.write("**TTS:** Piper")
-    st.write("**Vector DB:** ChromaDB")
+    st.write("**ASR:** Groq Whisper (on voice use)")
+    st.write("**TTS:** Edge network voice")
+    st.write("**Vector DB:** Disabled on free tier")
 
     st.divider()
     st.subheader("System Status")
@@ -327,7 +327,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-        st.write("📚 Knowledge base: loads on first question")
+        st.write("📚 Knowledge base: disabled on free tier")
 
         if tts:
             st.markdown(
@@ -339,7 +339,7 @@ with st.sidebar:
                 '<span class="status-red">🔴 Piper unavailable</span>',
                 unsafe_allow_html=True,
             )
-            st.caption("Download a Piper voice model to enable TTS.")
+            st.caption("Set TTS_PROVIDER=edge to enable network TTS.")
 
     except Exception as exc:
         backend = None
@@ -391,7 +391,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message["role"] == "assistant" and message.get("audio"):
-            st.audio(message["audio"], format="audio/wav")
+            st.audio(message["audio"], format=message.get("audio_format", "audio/wav"))
         if message.get("latency"):
             st.caption(f"Response time: {message['latency']:.2f}s")
 
@@ -447,9 +447,12 @@ if audio_input is not None:
                 if tts:
                     with st.spinner("🔊 Generating voice..."):
                         try:
-                            pcm = run_async(tts.synthesize(response))
-                            if pcm:
-                                audio_wav = pcm_to_wav(pcm, tts.sample_rate)
+                                audio_data = run_async(tts.synthesize(response))
+                                if audio_data:
+                                    if getattr(tts, "audio_format", "").startswith("audio/"):
+                                        audio_wav = audio_data
+                                    else:
+                                        audio_wav = pcm_to_wav(audio_data, tts.sample_rate)
                         except Exception as exc:
                             st.warning(f"TTS failed: {exc}")
 
@@ -457,6 +460,7 @@ if audio_input is not None:
                     "role": "assistant",
                     "content": response,
                     "audio": audio_wav,
+                    "audio_format": getattr(tts, "audio_format", "audio/wav") if audio_wav else None,
                     "latency": latency,
                 })
                 st.rerun()
@@ -493,9 +497,12 @@ if text_input:
             if tts:
                 with st.spinner("🔊 Generating voice..."):
                     try:
-                        pcm = run_async(tts.synthesize(response))
-                        if pcm:
-                            audio_wav = pcm_to_wav(pcm, tts.sample_rate)
+                        audio_data = run_async(tts.synthesize(response))
+                        if audio_data:
+                            if getattr(tts, "audio_format", "").startswith("audio/"):
+                                audio_wav = audio_data
+                            else:
+                                audio_wav = pcm_to_wav(audio_data, tts.sample_rate)
                     except Exception as exc:
                         st.warning(f"TTS failed: {exc}")
 
@@ -503,6 +510,7 @@ if text_input:
                 "role": "assistant",
                 "content": response,
                 "audio": audio_wav,
+                "audio_format": getattr(tts, "audio_format", "audio/wav") if audio_wav else None,
                 "latency": latency,
             })
             st.rerun()

@@ -9,6 +9,12 @@ services:
     envVars:
       - key: TOKENROUTER_API_KEY
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ASR_PROVIDER
+        value: groq
+      - key: TTS_PROVIDER
+        value: edge
       - key: WHISPER_MODEL
         value: tiny
       - key: WHISPER_COMPUTE_TYPE

@@ -42,15 +42,18 @@ def build_pipeline(
     # ASR
     asr = None
     if enable_asr:
-        from src.services.asr_whisper import LaptopWhisperASR
+        asr_provider = os.getenv("ASR_PROVIDER", "local").lower()
+        _log(f"ASR loading start: provider={asr_provider}")
+        if asr_provider == "groq":
+            from src.services.asr_groq import GroqWhisperASR
 
-        model_size = os.getenv("WHISPER_MODEL", "tiny")
-        compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
-        _log(f"ASR loading start: model={model_size}, compute={compute_type}")
-        asr = LaptopWhisperASR(
-            model_size=model_size,
-            compute_type=compute_type,
-        )
+            asr = GroqWhisperASR()
+        else:
+            from src.services.asr_whisper import LaptopWhisperASR
+
+            model_size = os.getenv("WHISPER_MODEL", "tiny")
+            compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
+            asr = LaptopWhisperASR(model_size=model_size, compute_type=compute_type)
         _log("ASR loading complete")
 
     # RAG
@@ -88,22 +91,15 @@ def build_pipeline(
     # TTS
     tts = None
     if enable_tts:
-        from src.services.tts_piper import PiperTTS
+        tts_provider = os.getenv("TTS_PROVIDER", "none").lower()
+        _log(f"TTS loading start: provider={tts_provider}")
+        if tts_provider == "edge":
+            from src.services.tts_edge import EdgeTTS
 
-        model_path = os.getenv(
-            "PIPER_MODEL",
-            str(project_root / "models" / "en_US-lessac-medium.onnx")
-        )
-
-        if os.path.exists(model_path):
-            _log(f"TTS loading start: model={model_path}")
-            tts = PiperTTS(
-                model_path=model_path,
-                sample_rate=22050
-            )
+            tts = EdgeTTS(voice=os.getenv("TTS_VOICE", "en-US-AriaNeural"))
             _log("TTS loading complete")
         else:
-            _log(f"TTS disabled: model not found at {model_path}")
+            _log("TTS disabled: set TTS_PROVIDER=edge to enable network TTS")
     else:
         _log("TTS disabled")
 
