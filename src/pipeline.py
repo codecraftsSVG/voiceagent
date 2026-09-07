@@ -4,9 +4,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from src.services.asr_whisper import LaptopWhisperASR
-from src.services.tts_piper import PiperTTS
-from src.services.rag_chroma import ChromaRAG
 from src.services.llm_groq import GroqLLM
 from src.services.llm_tokenrouter import TokenRouterLLM
 
@@ -45,6 +42,8 @@ def build_pipeline(
     # ASR
     asr = None
     if enable_asr:
+        from src.services.asr_whisper import LaptopWhisperASR
+
         model_size = os.getenv("WHISPER_MODEL", "tiny")
         compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
         _log(f"ASR loading start: model={model_size}, compute={compute_type}")
@@ -58,11 +57,11 @@ def build_pipeline(
     project_root = Path(__file__).resolve().parent.parent
     chroma_dir = os.getenv("CHROMA_DIR", str(project_root / "chroma_db"))
     _log(f"RAG loading start: path={chroma_dir}") if enable_rag else _log("RAG disabled")
-    rag = (
-        ChromaRAG(collection_name="voice_kb", persist_dir=chroma_dir, top_k=3)
-        if enable_rag
-        else None
-    )
+    rag = None
+    if enable_rag:
+        from src.services.rag_chroma import ChromaRAG
+
+        rag = ChromaRAG(collection_name="voice_kb", persist_dir=chroma_dir, top_k=3)
     if rag:
         _log("RAG loading complete")
 
@@ -89,6 +88,8 @@ def build_pipeline(
     # TTS
     tts = None
     if enable_tts:
+        from src.services.tts_piper import PiperTTS
+
         model_path = os.getenv(
             "PIPER_MODEL",
             str(project_root / "models" / "en_US-lessac-medium.onnx")

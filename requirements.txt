@@ -6,13 +6,6 @@ pyyaml>=6.0
 # ASR
 faster-whisper>=1.0.0
 
-# TTS
-piper-tts>=1.2.0
-
-# RAG
-chromadb>=0.5.0
-sentence-transformers>=3.0.0
-
 # Resume parsing
 python-docx>=1.1.0
 PyPDF2>=3.0.0

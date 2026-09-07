@@ -16,7 +16,6 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipeline import build_pipeline
-from src.services.rag_chroma import ChromaRAG
 
 
 logging.basicConfig(
@@ -233,6 +232,8 @@ def load_rag():
     """Load the embedding model only when a question needs RAG."""
     logger.info("load_rag start")
     try:
+        from src.services.rag_chroma import ChromaRAG
+
         chroma_dir = os.getenv("CHROMA_DIR", str(PROJECT_ROOT / "chroma_db"))
         rag = ChromaRAG(collection_name="voice_kb", persist_dir=chroma_dir, top_k=3)
         logger.info("load_rag complete")
