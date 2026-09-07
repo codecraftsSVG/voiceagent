@@ -1,5 +1,6 @@
 import asyncio
 import io
+import logging
 import os
 import queue
 import time
@@ -17,6 +18,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipeline import build_pipeline
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [voice-agent] %(message)s",
+)
+logger = logging.getLogger("voice-agent.frontend")
 
 
 # ============================================================
@@ -214,32 +222,44 @@ def ask_llm(user_text, rag, llm):
 
 @st.cache_resource(show_spinner="Loading AI models...")
 def load_backend():
+    logger.info("load_backend start")
     llm_mode = "tokenrouter"
-    pipeline, asr, rag, llm, tts = build_pipeline(
-        llm_mode=llm_mode,
-        enable_rag=True,
-        enable_tts=True,
-        enable_asr=False,
-    )
-    return {
-        "pipeline": pipeline,
-        "asr": asr,
-        "rag": rag,
-        "llm": llm,
-        "tts": tts,
-    }
+    try:
+        pipeline, asr, rag, llm, tts = build_pipeline(
+            llm_mode=llm_mode,
+            enable_rag=True,
+            enable_tts=True,
+            enable_asr=False,
+        )
+        logger.info("load_backend complete")
+        return {
+            "pipeline": pipeline,
+            "asr": asr,
+            "rag": rag,
+            "llm": llm,
+            "tts": tts,
+        }
+    except Exception:
+        logger.exception("load_backend failed")
+        raise
 
 
 @st.cache_resource(show_spinner="Loading speech recognition...")
 def load_asr():
     """Load one Whisper instance only when the user uses voice input."""
-    _, asr, _, _, _ = build_pipeline(
-        llm_mode="tokenrouter",
-        enable_rag=False,
-        enable_tts=False,
-        enable_asr=True,
-    )
-    return asr
+    logger.info("load_asr start")
+    try:
+        _, asr, _, _, _ = build_pipeline(
+            llm_mode="tokenrouter",
+            enable_rag=False,
+            enable_tts=False,
+            enable_asr=True,
+        )
+        logger.info("load_asr complete")
+        return asr
+    except Exception:
+        logger.exception("load_asr failed")
+        raise
 
 
 # ============================================================

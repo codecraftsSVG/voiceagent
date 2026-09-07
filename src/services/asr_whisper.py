@@ -35,7 +35,8 @@ class LaptopWhisperASR(FrameProcessor):
 
         print(
             f"[ASR] Loading faster-whisper '{model_size}' "
-            f"on {device} ({compute_type})..."
+            f"on {device} ({compute_type})...",
+            flush=True,
         )
 
         self.model = WhisperModel(
@@ -43,6 +44,7 @@ class LaptopWhisperASR(FrameProcessor):
             device=device,
             compute_type=compute_type,
         )
+        print(f"[ASR] Whisper model ready: {model_size}", flush=True)
 
         self.language = language
         self.sample_rate = 16000

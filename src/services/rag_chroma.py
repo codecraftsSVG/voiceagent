@@ -1,5 +1,6 @@
 """Lightweight RAG with ChromaDB - standalone, no Pipecat deps."""
 import os
+import time
 from typing import List, Optional
 
 import chromadb
@@ -19,20 +20,29 @@ class ChromaRAG:
         embedding_model: str = "all-MiniLM-L6-v2",
         top_k: int = 3,
     ):
+        started_at = time.perf_counter()
+        print(
+            f"[RAG] init start: collection={collection_name}, path={persist_dir}, "
+            f"embedding={embedding_model}",
+            flush=True,
+        )
         self.top_k = top_k
         self.client = chromadb.PersistentClient(path=persist_dir)
+        print("[RAG] PersistentClient ready", flush=True)
         self.embedding_fn = SentenceTransformerEmbeddingFunction(model_name=embedding_model)
+        print("[RAG] embedding function ready", flush=True)
 
         try:
             self.collection = self.client.get_collection(
                 name=collection_name, embedding_function=self.embedding_fn
             )
-            print(f"[RAG] Loaded collection '{collection_name}'")
+            print(f"[RAG] Loaded collection '{collection_name}'", flush=True)
         except Exception:
             self.collection = self.client.create_collection(
                 name=collection_name, embedding_function=self.embedding_fn
             )
-            print(f"[RAG] Created new collection '{collection_name}'")
+            print(f"[RAG] Created new collection '{collection_name}'", flush=True)
+        print(f"[RAG] init complete in {time.perf_counter() - started_at:.2f}s", flush=True)
 
     def count(self) -> int:
         """Return the collection size when the caller explicitly needs it."""

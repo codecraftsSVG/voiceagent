@@ -1,5 +1,6 @@
 """Voice agent component builder."""
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -8,6 +9,10 @@ from src.services.tts_piper import PiperTTS
 from src.services.rag_chroma import ChromaRAG
 from src.services.llm_groq import GroqLLM
 from src.services.llm_tokenrouter import TokenRouterLLM
+
+
+def _log(message: str):
+    print(f"[STARTUP] {message}", flush=True)
 
 
 def load_system_prompt() -> str:
@@ -31,25 +36,38 @@ def build_pipeline(
     enable_asr: bool = True,
 ):
     """Build standalone components for console/audio modes."""
+    started_at = time.perf_counter()
+    _log(
+        f"build_pipeline start: rag={enable_rag}, tts={enable_tts}, "
+        f"asr={enable_asr}, llm={llm_mode}"
+    )
 
     # ASR
     asr = None
     if enable_asr:
+        model_size = os.getenv("WHISPER_MODEL", "tiny")
+        compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
+        _log(f"ASR loading start: model={model_size}, compute={compute_type}")
         asr = LaptopWhisperASR(
-            model_size=os.getenv("WHISPER_MODEL", "tiny"),
-            compute_type=os.getenv("WHISPER_COMPUTE_TYPE", "int8"),
+            model_size=model_size,
+            compute_type=compute_type,
         )
+        _log("ASR loading complete")
 
     # RAG
     project_root = Path(__file__).resolve().parent.parent
     chroma_dir = os.getenv("CHROMA_DIR", str(project_root / "chroma_db"))
+    _log(f"RAG loading start: path={chroma_dir}") if enable_rag else _log("RAG disabled")
     rag = (
         ChromaRAG(collection_name="voice_kb", persist_dir=chroma_dir, top_k=3)
         if enable_rag
         else None
     )
+    if rag:
+        _log("RAG loading complete")
 
     # LLM
+    _log(f"LLM loading start: mode={llm_mode}")
     system_prompt = load_system_prompt()
 
     if llm_mode == "tokenrouter":
@@ -66,6 +84,7 @@ def build_pipeline(
         )
     else:
         llm = None
+    _log("LLM loading complete")
 
     # TTS
     tts = None
@@ -76,11 +95,17 @@ def build_pipeline(
         )
 
         if os.path.exists(model_path):
+            _log(f"TTS loading start: model={model_path}")
             tts = PiperTTS(
                 model_path=model_path,
                 sample_rate=22050
             )
+            _log("TTS loading complete")
         else:
-            print("[WARN] Piper model not found. TTS disabled. Run setup.sh")
+            _log(f"TTS disabled: model not found at {model_path}")
+    else:
+        _log("TTS disabled")
+
+    _log(f"build_pipeline complete in {time.perf_counter() - started_at:.2f}s")
 
     return None, asr, rag, llm, tts
