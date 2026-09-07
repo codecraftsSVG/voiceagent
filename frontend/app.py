@@ -398,7 +398,7 @@ for message in st.session_state.messages:
 # VOICE INPUT
 # ============================================================
 
-st.subheader("🎤 Voice Input")
+    st.subheader("👨 Voice Input")
 audio_input = st.audio_input("Record a question")
 
 if audio_input is not None:

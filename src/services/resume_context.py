@@ -4,7 +4,7 @@ from typing import List
 
 
 RESUME_CHUNKS = [
-    "Vamshidhar Goud is a Senior GenAI and Agentic AI Engineer based in Hyderabad, India. He has 6+ years of experience shipping production-grade RAG, GraphRAG, and multi-agent platforms at enterprise scale across GCP and Azure. Key metrics include 98% latency reduction, 94% retrieval accuracy, 70% faster proposal generation, and $2M+ in influenced initiatives.",
+    "Vamshidhar Goud is a Senior GenAI and Agentic AI Engineer based in Hyderabad, India. He has 6+ years of experience shipping production-grade RAG, GraphRAG, and multi-agent platforms at enterprise scale across GCP and Azure. Key metrics include 98% latency reduction, 94% retrieval accuracy, 70% faster proposal generation, and $2M+ in influenced initiatives. Contact: +91 6303610573, vamshidhargoud300@gmail.com, linkedin.com/in/vamsdharngoud/.",
     "At Capgemini from April 2021 to the present, Vamshidhar works as a Senior GenAI / Agentic AI Developer. He architected enterprise GenAI and Agentic AI platforms spanning 30,000+ documents and multimodal content, and optimized retrieval to cut latency by 97%.",
     "Agent Builder Platform: Vamshidhar built a platform for autonomous agent composition and execution. It reduced agent-mapping latency from 120 seconds to 1-2 seconds, a 98% improvement, and enables dynamic creation and deployment of AI agents without manual configuration.",
     "PO and Commercial Book Reconciliation Agent: He designed an autonomous agent for an enterprise CPG client that automates extraction, validation, and discrepancy detection, cutting manual effort by more than 60%. Technologies included Python, LLMs, Agentic AI, document processing, and business rules.",
