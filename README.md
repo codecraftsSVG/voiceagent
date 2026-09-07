@@ -126,7 +126,7 @@ This repository includes a Docker image for a public Hugging Face Space. Create 
 
 The image installs `ffmpeg`, `espeak-ng`, and `libsndfile`, downloads the Piper voice model during the image build, and rebuilds the small embedded Chroma collection on every container start. Resume files can be added under `resumes/`; if none are present, the embedded resume chunks are used.
 
-The browser microphone uses WebRTC. Visitors must grant microphone permission in their browser. The deployment uses `WHISPER_MODEL=tiny` to reduce build time, latency, and memory use on small instances.
+The browser microphone uses Streamlit's native audio recorder. Visitors must grant microphone permission in their browser. The deployment uses `WHISPER_MODEL=tiny` to reduce build time, latency, and memory use on small instances.
 
 Required Space secret:
 

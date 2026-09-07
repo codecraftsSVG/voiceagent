@@ -2,13 +2,11 @@ import asyncio
 import io
 import logging
 import os
-import queue
 import time
 import wave
 
 import numpy as np
 import streamlit as st
-from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
 import sys
 from pathlib import Path
@@ -125,39 +123,6 @@ def pcm_to_wav(pcm_bytes: bytes, sample_rate: int, channels: int = 1, sample_wid
         wav.setframerate(sample_rate)
         wav.writeframes(pcm_bytes)
     return buffer.getvalue()
-
-
-def collect_webrtc_audio(webrtc_context):
-    """Drain browser audio frames into the current Streamlit session."""
-    if not webrtc_context or not webrtc_context.state.playing:
-        return
-
-    try:
-        frames = webrtc_context.audio_receiver.get_frames(timeout=0.2)
-    except queue.Empty:
-        return
-
-    for frame in frames:
-        audio = frame.to_ndarray()
-        if audio.ndim > 1:
-            audio = np.mean(audio, axis=0)
-        if np.issubdtype(audio.dtype, np.integer):
-            audio = audio.astype(np.float32) / np.iinfo(audio.dtype).max
-        st.session_state.webrtc_frames.append(
-            (audio.astype(np.float32), frame.sample_rate or 48000)
-        )
-
-
-def webrtc_frames_to_wav():
-    """Convert collected WebRTC frames into the WAV format ASR expects."""
-    frames = st.session_state.get("webrtc_frames", [])
-    if not frames:
-        return b""
-
-    sample_rate = frames[0][1]
-    audio = np.concatenate([audio for audio, _ in frames])
-    pcm = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)
-    return pcm_to_wav(pcm.tobytes(), sample_rate)
 
 
 def transcribe_audio(audio_bytes, whisper_model):
@@ -289,10 +254,6 @@ if "last_audio" not in st.session_state:
 
 if "last_latency" not in st.session_state:
     st.session_state.last_latency = None
-
-if "webrtc_frames" not in st.session_state:
-    st.session_state.webrtc_frames = []
-
 
 # ============================================================
 # HEADER
@@ -439,29 +400,10 @@ for message in st.session_state.messages:
 # ============================================================
 
 st.subheader("🎤 Voice Input")
+audio_input = st.audio_input("Record a question")
 
-webrtc_ctx = webrtc_streamer(
-    key="voice-input",
-    mode=WebRtcMode.SENDONLY,
-    media_stream_constraints={"audio": True, "video": False},
-    audio_receiver_size=256,
-)
-collect_webrtc_audio(webrtc_ctx)
-
-webrtc_audio = None
-if not webrtc_ctx.state.playing and st.session_state.webrtc_frames:
-    if st.button("Process browser recording", type="primary"):
-        webrtc_audio = webrtc_frames_to_wav()
-        st.session_state.webrtc_frames = []
-
-if webrtc_audio:
-    audio_input = None
-    audio_bytes = webrtc_audio
-else:
-    audio_input = st.audio_input("Or record with Streamlit")
-
-if webrtc_audio or audio_input is not None:
-    audio_bytes = webrtc_audio or audio_input.getvalue()
+if audio_input is not None:
+    audio_bytes = audio_input.getvalue()
     audio_hash = hash(audio_bytes)
 
     if st.session_state.get("processed_audio_hash") != audio_hash:

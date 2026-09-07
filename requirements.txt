@@ -19,7 +19,6 @@ PyPDF2>=3.0.0
 
 # Frontend
 streamlit>=1.35.0
-streamlit-webrtc>=0.47.9
 
 # Pipecat frame types used by the ASR service
 pipecat-ai>=0.0.70
