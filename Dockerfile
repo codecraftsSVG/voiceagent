@@ -23,7 +23,7 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Keep the image small. Optional RAG and TTS assets are loaded only when enabled.
-RUN mkdir -p models chroma_db resumes
+RUN mkdir -p models chroma_db resumes data
 
 EXPOSE 8501
 

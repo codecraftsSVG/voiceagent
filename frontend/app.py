@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import io
 import logging
 import os
@@ -17,6 +18,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipeline import build_pipeline
 from src.services.resume_context import ResumeContext
+from src.services.semantic_cache import SemanticCache
+from src.services.session_history import SessionHistory
 
 
 logging.basicConfig(
@@ -157,6 +160,15 @@ def transcribe_audio(audio_bytes, whisper_model):
 
 def ask_llm(user_text, rag, llm):
     """Execute RAG + LLM pipeline."""
+    context_key = hashlib.sha256(
+        f"{getattr(llm, 'model', 'unknown')}:{bool(rag)}".encode()
+    ).hexdigest()
+    st.session_state.last_cache_context_key = context_key
+    cached = semantic_cache.lookup(user_text, context_key)
+    st.session_state.last_cache_hit = cached
+    if cached:
+        return cached["response"]
+
     prompt = user_text
 
     # RAG
@@ -179,6 +191,7 @@ def ask_llm(user_text, rag, llm):
     else:
         raise RuntimeError("LLM does not expose chat/chat_stream.")
 
+    semantic_cache.put(user_text, context_key, response)
     return response
 
 
@@ -245,6 +258,16 @@ def load_rag():
 # SESSION STATE
 # ============================================================
 
+history_store = SessionHistory()
+semantic_cache = SemanticCache(str(history_store.path), threshold=float(os.getenv("CACHE_SIMILARITY_THRESHOLD", "0.92")))
+
+if "active_session_id" not in st.session_state:
+    sessions = history_store.list_sessions()
+    if not sessions:
+        sessions = [history_store.create()]
+    st.session_state.active_session_id = sessions[0]["id"]
+    st.session_state.messages = list(sessions[0].get("messages", []))
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -253,6 +276,27 @@ if "last_audio" not in st.session_state:
 
 if "last_latency" not in st.session_state:
     st.session_state.last_latency = None
+
+
+def persist_message(message):
+    """Persist text metadata while retaining audio only for the current run."""
+    history_store.append(st.session_state.active_session_id, message)
+
+
+def reset_llm_context():
+    current_llm = globals().get("llm")
+    if hasattr(current_llm, "history"):
+        current_llm.history = []
+
+
+def sync_llm_context(messages):
+    current_llm = globals().get("llm")
+    if hasattr(current_llm, "history"):
+        current_llm.history = [
+            {"role": message["role"], "content": message["content"]}
+            for message in messages
+            if message.get("role") in {"user", "assistant"} and message.get("content")
+        ]
 
 # ============================================================
 # HEADER
@@ -349,12 +393,51 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🧹 Clear conversation", use_container_width=True):
+    st.subheader("Conversation history")
+    sessions = history_store.list_sessions()
+    session_by_id = {session["id"]: session for session in sessions}
+    active_session = session_by_id.get(st.session_state.active_session_id)
+    if active_session is None:
+        active_session = history_store.create()
+        st.session_state.active_session_id = active_session["id"]
+        st.session_state.messages = []
+        sessions = history_store.list_sessions()
+        session_by_id = {session["id"]: session for session in sessions}
+
+    session_ids = [session["id"] for session in sessions]
+    selected_id = st.selectbox(
+        "Open conversation",
+        session_ids,
+        index=session_ids.index(st.session_state.active_session_id),
+        format_func=lambda session_id: session_by_id[session_id]["title"],
+        label_visibility="collapsed",
+    )
+    if selected_id != st.session_state.active_session_id:
+        st.session_state.active_session_id = selected_id
+        st.session_state.messages = list(session_by_id[selected_id].get("messages", []))
+        st.session_state.last_audio = None
+        st.session_state.last_latency = None
+        sync_llm_context(st.session_state.messages)
+        st.rerun()
+
+    if st.button("New conversation", use_container_width=True):
+        new_session = history_store.create()
+        st.session_state.active_session_id = new_session["id"]
         st.session_state.messages = []
         st.session_state.last_audio = None
         st.session_state.last_latency = None
+        reset_llm_context()
         st.rerun()
 
+    if st.button("Clear conversation", use_container_width=True):
+        history_store.delete(st.session_state.active_session_id)
+        new_session = history_store.create()
+        st.session_state.active_session_id = new_session["id"]
+        st.session_state.messages = []
+        st.session_state.last_audio = None
+        st.session_state.last_latency = None
+        reset_llm_context()
+        st.rerun()
 
 # ============================================================
 # BACKEND CHECK
@@ -368,6 +451,10 @@ if backend is None:
 rag = backend["rag"]
 llm = backend["llm"]
 tts = backend["tts"]
+
+if not st.session_state.get("llm_context_loaded"):
+    sync_llm_context(st.session_state.messages)
+    st.session_state.llm_context_loaded = True
 
 
 def get_rag():
@@ -424,7 +511,9 @@ if audio_input is not None:
 
         if text:
             st.info(f"**You said:** {text}")
-            st.session_state.messages.append({"role": "user", "content": text})
+            user_message = {"role": "user", "content": text}
+            st.session_state.messages.append(user_message)
+            persist_message(user_message)
 
             # LLM
             start = time.perf_counter()
@@ -441,8 +530,10 @@ if audio_input is not None:
                 st.session_state.last_latency = latency
 
                 # TTS
-                audio_wav = None
-                if tts:
+                cached = st.session_state.get("last_cache_hit")
+                audio_wav = cached.get("audio") if cached and cached.get("audio") else None
+                audio_format = cached.get("audio_format") if cached and cached.get("audio_format") else None
+                if tts and audio_wav is None:
                     with st.spinner("🔊 Generating voice..."):
                         try:
                                 audio_data = run_async(tts.synthesize(response))
@@ -454,13 +545,21 @@ if audio_input is not None:
                         except Exception as exc:
                             st.warning(f"TTS failed: {exc}")
 
-                st.session_state.messages.append({
+                if audio_wav and not cached:
+                    audio_format = getattr(tts, "audio_format", "audio/wav")
+                    semantic_cache.update_audio(
+                        text, st.session_state.last_cache_context_key, audio_wav, audio_format
+                    )
+
+                assistant_message = {
                     "role": "assistant",
                     "content": response,
                     "audio": audio_wav,
-                    "audio_format": getattr(tts, "audio_format", "audio/wav") if audio_wav else None,
+                    "audio_format": audio_format or (getattr(tts, "audio_format", "audio/wav") if audio_wav else None),
                     "latency": latency,
-                })
+                }
+                st.session_state.messages.append(assistant_message)
+                persist_message(assistant_message)
                 st.rerun()
         else:
             st.warning("I couldn't detect any speech. Please try again.")
@@ -478,7 +577,9 @@ text_input = st.chat_input("Type your message...")
 if text_input:
     text_input = text_input.strip()
     if text_input:
-        st.session_state.messages.append({"role": "user", "content": text_input})
+        user_message = {"role": "user", "content": text_input}
+        st.session_state.messages.append(user_message)
+        persist_message(user_message)
 
         start = time.perf_counter()
         with st.spinner("🤖 Thinking..."):
@@ -491,8 +592,10 @@ if text_input:
         latency = time.perf_counter() - start
 
         if response:
-            audio_wav = None
-            if tts:
+            cached = st.session_state.get("last_cache_hit")
+            audio_wav = cached.get("audio") if cached and cached.get("audio") else None
+            audio_format = cached.get("audio_format") if cached and cached.get("audio_format") else None
+            if tts and audio_wav is None:
                 with st.spinner("🔊 Generating voice..."):
                     try:
                         audio_data = run_async(tts.synthesize(response))
@@ -504,13 +607,21 @@ if text_input:
                     except Exception as exc:
                         st.warning(f"TTS failed: {exc}")
 
-            st.session_state.messages.append({
+            if audio_wav and not cached:
+                audio_format = getattr(tts, "audio_format", "audio/wav")
+                semantic_cache.update_audio(
+                    text_input, st.session_state.last_cache_context_key, audio_wav, audio_format
+                )
+
+            assistant_message = {
                 "role": "assistant",
                 "content": response,
                 "audio": audio_wav,
-                "audio_format": getattr(tts, "audio_format", "audio/wav") if audio_wav else None,
+                "audio_format": audio_format or (getattr(tts, "audio_format", "audio/wav") if audio_wav else None),
                 "latency": latency,
-            })
+            }
+            st.session_state.messages.append(assistant_message)
+            persist_message(assistant_message)
             st.rerun()
 
 

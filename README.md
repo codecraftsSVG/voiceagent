@@ -141,6 +141,19 @@ WHISPER_MODEL=tiny
 WHISPER_COMPUTE_TYPE=int8
 ```
 
+Session history and semantic response caching use SQLite by default at
+`./data/voice_agent.sqlite3`. Set these variables when deploying with a
+persistent volume:
+
+```text
+SESSION_HISTORY_DB=/persistent-data/voice_agent.sqlite3
+CACHE_SIMILARITY_THRESHOLD=0.92
+```
+
+The semantic cache reuses responses for sufficiently similar questions and
+stores generated TTS audio when available. A persistent volume is required to
+retain sessions and cache entries across container replacement.
+
 The free Space runtime is ephemeral, so local Chroma data is intentionally rebuilt rather than persisted between restarts.
 
 ## Render Deployment

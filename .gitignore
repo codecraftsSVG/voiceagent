@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 chroma_db/
+data/*.sqlite3
 models/*.onnx
 models/*.json
 !models/.gitkeep
