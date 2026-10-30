@@ -8,3 +8,9 @@ models/*.json
 !models/.gitkeep
 resumes/*.docx
 resumes/*.pdf
+*.env
+voice-agent.env
+*.docx
+*.pdf
+*.code-workspace
+
