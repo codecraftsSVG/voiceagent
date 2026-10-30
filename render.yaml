@@ -9,6 +9,8 @@ services:
     envVars:
       - key: TOKENROUTER_API_KEY
         sync: false
+      - key: TOKENROUTER_MODEL
+        value: z-ai/glm-5.3-flash
       - key: GROQ_API_KEY
         sync: false
       - key: ASR_PROVIDER

@@ -73,8 +73,9 @@ def build_pipeline(
     system_prompt = load_system_prompt()
 
     if llm_mode == "tokenrouter":
+        model_name = os.getenv("TOKENROUTER_MODEL", "z-ai/glm-5.3-flash")
         llm = TokenRouterLLM(
-            model="z-ai/glm-5.3-free",
+            model=model_name,
             system_prompt=system_prompt,
             max_tokens=512,
         )

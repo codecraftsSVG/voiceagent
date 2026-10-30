@@ -1,4 +1,4 @@
-"""TokenRouter API wrapper for z-ai/glm-5.3-free and other models.
+"""TokenRouter API wrapper for NVIDIA Nemotron and other models.
 Free tier available at https://api.tokenrouter.com
 """
 import os
@@ -19,7 +19,7 @@ class TokenRouterLLM:
         self,
         api_key: str = None,
         base_url: str = "https://api.tokenrouter.com/v1",
-        model: str = "z-ai/glm-5.3-free",
+        model: str = None,
         system_prompt: str = "You are a helpful voice assistant. Keep responses under 2 sentences.",
         temperature: float = 0.7,
         max_tokens: int = 256,
@@ -31,8 +31,7 @@ class TokenRouterLLM:
                 "Get one at https://tokenrouter.com or set env var."
             )
         self.client = AsyncOpenAI(api_key=self.api_key, base_url=base_url)
-        self.model = model
-        self.system_prompt = system_prompt
+        self.model = model or os.getenv("TOKENROUTER_MODEL", "z-ai/glm-5.3-flash")
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.history: List[Dict[str, str]] = []

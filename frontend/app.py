@@ -335,8 +335,9 @@ st.markdown(
 with st.sidebar:
     st.header("⚙️ Configuration")
 
+    model_display = os.getenv("TOKENROUTER_MODEL", "z-ai/glm-5.3-flash")
     st.write("**LLM:** TokenRouter")
-    st.write("**Model:** z-ai/glm-5.3-free")
+    st.write(f"**Model:** {model_display}")
     st.write("**ASR:** Groq Whisper (on voice use)")
     st.write("**TTS:** Edge male network voice")
     st.write("**Vector DB:** Disabled on free tier")

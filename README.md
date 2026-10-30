@@ -30,7 +30,7 @@ voice-agent-laptop/
 │   ├── pipeline.py                 # Component builder
 │   └── services/
 │       ├── asr_whisper.py          # faster-whisper base (CPU)
-│       ├── llm_tokenrouter.py      # TokenRouter / GLM-5.3-free
+│       ├── llm_tokenrouter.py      # TokenRouter / NVIDIA Nemotron
 │       ├── llm_groq.py             # Groq fallback
 │       ├── tts_piper.py            # Piper TTS
 │       └── rag_chroma.py           # ChromaDB vector store
