@@ -202,7 +202,7 @@ def ask_llm(user_text, rag, llm):
 @st.cache_resource(show_spinner="Loading AI models...")
 def load_backend():
     logger.info("load_backend start")
-    llm_mode = "tokenrouter"
+    llm_mode = os.getenv("LLM_MODE", "groq" if os.getenv("GROQ_API_KEY") else "tokenrouter")
     try:
         pipeline, asr, rag, llm, tts = build_pipeline(
             llm_mode=llm_mode,
@@ -335,8 +335,13 @@ st.markdown(
 with st.sidebar:
     st.header("⚙️ Configuration")
 
-    model_display = os.getenv("TOKENROUTER_MODEL", "z-ai/glm-5.3-flash")
-    st.write("**LLM:** TokenRouter")
+    llm_mode_cfg = os.getenv("LLM_MODE", "groq" if os.getenv("GROQ_API_KEY") else "tokenrouter")
+    if llm_mode_cfg == "groq":
+        model_display = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+        st.write("**LLM:** Groq / OpenRouter Proxy")
+    else:
+        model_display = os.getenv("TOKENROUTER_MODEL", "z-ai/glm-5.3-flash")
+        st.write("**LLM:** TokenRouter")
     st.write(f"**Model:** {model_display}")
     st.write("**ASR:** Groq Whisper (on voice use)")
     st.write("**TTS:** Edge male network voice")
@@ -345,18 +350,18 @@ with st.sidebar:
     st.divider()
     st.subheader("System Status")
 
-    tokenrouter_key = os.getenv("TOKENROUTER_API_KEY")
-    if tokenrouter_key:
+    api_key_detected = os.getenv("GROQ_API_KEY") if llm_mode_cfg == "groq" else os.getenv("TOKENROUTER_API_KEY")
+    if api_key_detected:
         st.markdown(
-            '<span class="status-green">🟢 TokenRouter API key detected</span>',
+            '<span class="status-green">🟢 LLM API key detected</span>',
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            '<span class="status-red">🔴 TokenRouter API key missing</span>',
+            '<span class="status-red">🔴 LLM API key missing</span>',
             unsafe_allow_html=True,
         )
-        st.caption("Set TOKENROUTER_API_KEY before starting Streamlit.")
+        st.caption("Set GROQ_API_KEY or TOKENROUTER_API_KEY.")
 
     # Backend loading
     try:

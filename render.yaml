@@ -13,6 +13,10 @@ services:
         value: z-ai/glm-5.3-flash
       - key: GROQ_API_KEY
         sync: false
+      - key: LLM_MODE
+        value: groq
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
       - key: ASR_PROVIDER
         value: groq
       - key: TTS_PROVIDER

@@ -72,6 +72,9 @@ def build_pipeline(
     _log(f"LLM loading start: mode={llm_mode}")
     system_prompt = load_system_prompt()
 
+    if not llm_mode:
+        llm_mode = "groq" if os.getenv("GROQ_API_KEY") else "tokenrouter"
+
     if llm_mode == "tokenrouter":
         model_name = os.getenv("TOKENROUTER_MODEL", "z-ai/glm-5.3-flash")
         llm = TokenRouterLLM(
@@ -80,8 +83,9 @@ def build_pipeline(
             max_tokens=512,
         )
     elif llm_mode == "groq":
+        groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
         llm = GroqLLM(
-            model="llama-3.1-70b-versatile",
+            model=groq_model,
             system_prompt=system_prompt,
             max_tokens=256,
         )

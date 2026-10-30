@@ -11,7 +11,7 @@ class GroqLLM:
     def __init__(
         self,
         api_key: str = None,
-        model: str = "llama-3.1-70b-versatile",
+        model: str = None,
         system_prompt: str = "You are a helpful voice assistant. Be concise.",
         temperature: float = 0.7,
         max_tokens: int = 256,
@@ -20,7 +20,7 @@ class GroqLLM:
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not set. Get one at https://console.groq.com/keys")
         self.client = AsyncOpenAI(api_key=self.api_key, base_url="https://api.groq.com/openai/v1")
-        self.model = model
+        self.model = model or os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
         self.system_prompt = system_prompt
         self.temperature = temperature
         self.max_tokens = max_tokens

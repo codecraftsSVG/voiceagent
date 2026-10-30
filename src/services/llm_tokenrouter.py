@@ -32,6 +32,7 @@ class TokenRouterLLM:
             )
         self.client = AsyncOpenAI(api_key=self.api_key, base_url=base_url)
         self.model = model or os.getenv("TOKENROUTER_MODEL", "z-ai/glm-5.3-flash")
+        self.system_prompt = system_prompt
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.history: List[Dict[str, str]] = []
